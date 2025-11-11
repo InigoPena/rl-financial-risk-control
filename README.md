@@ -1,1 +1,1 @@
-# rl-financial-risk-control
+# Reinforcement Learning - Risk Management
