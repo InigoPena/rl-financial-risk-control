@@ -1,9 +1,6 @@
 import numpy as np
 from trading_env import TradingEnv, Actions, Positions
-import matplotlib.pyplot as plt
-import pandas as pd
 import gymnasium as gym
-import os
 
 class GoldHedgeEnv(TradingEnv):
     def __init__(self, gold_df, hedge_df, window_size, frame_bound, render_mode=None):
@@ -28,6 +25,13 @@ class GoldHedgeEnv(TradingEnv):
 
         self.trade_fee = 0.001  # Transaction fee of 0.1%
         self.action_space = gym.spaces.Discrete(len(self.allocations)) 
+        
+        # Update observation space to include internal state (3 columns)
+        # transform shape from (window_size, 4) to (window_size, 7)
+        self.shape = (window_size, self.signal_features.shape[1] + 3)
+        self.observation_space = gym.spaces.Box(
+            low=-1e10, high=1e10, shape=self.shape, dtype=np.float32,
+        ) 
         
         self.state_history = []
 
@@ -191,6 +195,27 @@ class GoldHedgeEnv(TradingEnv):
 
         return reward
 
+
+    def _get_info(self):
+        """Extend base TradingEnv info with portfolio allocation and risk metrics."""
+        info = super()._get_info()
+
+        # Current drawdown based on max wealth seen so far in the episode
+        if not hasattr(self, '_max_profit_so_far'):
+            self._max_profit_so_far = 1.0
+        self._max_profit_so_far = max(self._max_profit_so_far, self._total_profit)
+        drawdown = (self._max_profit_so_far - self._total_profit) / self._max_profit_so_far
+
+        info.update({
+            "gold_weight": float(self.current_gold_w),
+            "hedge_weight": float(self.current_hedge_w),
+            "cash_weight": float(1.0 - (self.current_gold_w + self.current_hedge_w)),
+            "drawdown": float(drawdown),
+            "turnover": float(getattr(self, "_last_turnover", 0.0)),
+            "trade_cost": float(getattr(self, "_last_trade_cost", 0.0)),
+        })
+        return info
+
     def step(self, action):
         self._truncated = False
         self._current_tick += 1
@@ -259,86 +284,3 @@ class GoldHedgeEnv(TradingEnv):
 
         return super().reset(seed=seed)
 
-# Esta funcion y el bloque main son solo para pruebas rápidas del entorno
-
-def render_portfolio_evolution(weights_history, title="Evolución de la Cartera"):
-    """
-    weights_history: Lista o array de listas con el formato [oro_w, hedge_w, cash_w]
-    """
-    weights_history = np.array(weights_history)
-    steps = range(len(weights_history))
-    
-    oro = weights_history[:, 0]
-    hedge = weights_history[:, 1]
-    cash = 1.0 - (oro + hedge) 
-
-    plt.figure(figsize=(14, 8))
-    
-    # Creamos líneas separadas para cada activo
-    plt.plot(steps, oro, label='Oro', color='#ffd700', linewidth=2, marker='o', markersize=3)
-    plt.plot(steps, hedge, label='Hedge (USD)', color='#2ecc71', linewidth=2, marker='s', markersize=3)
-    plt.plot(steps, cash, label='Cash', color='#3498db', linewidth=2, marker='^', markersize=3)
-
-    plt.title(title, fontsize=14, fontweight='bold')
-    plt.xlabel('Días (Ticks)', fontsize=12)
-    plt.ylabel('Peso en la Cartera (proporción)', fontsize=12)
-    plt.legend(loc='best', fontsize=11, framealpha=0.9)
-    plt.ylim(-0.05, 1.05)
-    plt.grid(alpha=0.3, linestyle='--')
-    plt.tight_layout()
-    plt.show()
-
-if __name__ == "__main__":
-
-    # 1. Cargar los datos
-    gold_data = pd.read_csv('Codigo/data/gold_data.csv', index_col=0)
-    hedge_data = pd.read_csv('Codigo/data/treasury_data_safepolicy.csv', index_col=0)
-
-    # 2. Convertir el índice a formato fecha (imprescindible)
-    gold_data.index = pd.to_datetime(gold_data.index)
-    hedge_data.index = pd.to_datetime(hedge_data.index)
-
-    # 3. Seleccionar el rango de fechas para la simulación
-    # Puedes usar el formato 'YYYY-MM-DD'
-    fecha_inicio = '2020-01-01'
-    fecha_fin    = '2020-02-03'
-
-    gold_subset = gold_data.loc[fecha_inicio : fecha_fin].copy()
-    hedge_subset = hedge_data.loc[fecha_inicio : fecha_fin].copy()
-
-    # 4. Sincronizar (opcional pero recomendado)
-    # Esto asegura que ambos tengan exactamente los mismos días por si falta alguno
-    common_index = gold_subset.index.intersection(hedge_subset.index)
-    gold_subset = gold_subset.loc[common_index]
-    hedge_subset = hedge_subset.loc[common_index]
-
-    # 2. Configurar el entorno
-    n_days = len(gold_subset)
-    window_size = 10
-    frame_bound = (window_size, n_days)
-    
-    env = GoldHedgeEnv(
-        gold_df=gold_subset, 
-        hedge_df=hedge_subset, 
-        window_size=window_size, 
-        frame_bound=frame_bound
-    )
-
-    # 3. Ejecutar una simulación con acciones aleatorias
-    # Esto sirve para ver si el código "fluye" bien antes de entrenar
-    obs, info = env.reset()
-    done = False
-    
-    print("Iniciando simulación de prueba...")
-    
-    while not done:
-        # Elegimos una acción al azar (0 a 6)
-        action = env.action_space.sample() 
-        obs, reward, terminated, truncated, info = env.step(action)
-        done = terminated or truncated
-
-    print(f"Simulación terminada.")
-    print(f"Profit final: {info['total_profit']:.2f}")
-
-    # 4. Visualizar la evolución de los pesos
-    render_portfolio_evolution(env.history_w, title="Prueba de Asignación Aleatoria")
