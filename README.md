@@ -118,27 +118,27 @@ rl-financial-risk-control/
 
 ---
 
-## Entornos de Trading
+## Entorno de Trading
 
-### `GoldHedgeEnv` (Principal)
+### `GoldHedgeEnv`
 
-Entorno para trading de oro con cobertura dinámica.
+Entorno para trading de oro con cobertura dinámica, centrado en **gestión activa de riesgo**.
 
 **Espacio de Observación**:
-- `[window_size, 7]` features:
-  - Gold Return (1D)
-  - Gold Volatility (20D rolling)
-  - Hedge Return (1D)
-  - Hedge Volatility (20D rolling)
-  - Current Gold Weight
-  - Current Hedge Weight
-  - Current Cash Weight
+- `[window_size, 7]` :
+  - **Gold Return (1D)**: Retorno diario del oro
+  - **Gold Volatility**: Desviación estándar rolling (20 días)
+  - **Hedge Return (1D)**: Retorno diario del activo de cobertura (USD/Treasury)
+  - **Hedge Volatility**: Desviación estándar rolling (20 días)
+  - **Current Gold Weight**: Peso actual en oro del portfolio
+  - **Current Hedge Weight**: Peso actual en hedge del portfolio
+  - **Portfolio Drawdown**: Pérdida desde máximo histórico (gestión de riesgo)
 
 **Espacio de Acción** (7 estrategias discretas):
 ```python
-0: [0.0, 0.0, 1.0]   # 100% Cash (defensivo)
+0: [0.0, 0.0, 1.0]   # 100% Cash
 1: [0.25, 0.25, 0.5] # Balanceado
-2: [0.5, 0.5, 0.0]   # Equilibrado Gold-Hedge
+2: [0.5, 0.5, 0.0]   # Equilibrado
 3: [0.75, 0.25, 0.0] # Agresivo en Gold
 4: [1.0, 0.0, 0.0]   # 100% Gold
 5: [0.25, 0.75, 0.0] # Cobertura fuerte
@@ -146,9 +146,24 @@ Entorno para trading de oro con cobertura dinámica.
 ```
 
 **Función de Recompensa**:
+
+La función de recompensa está diseñada para optimizar **retornos ajustados por riesgo** con múltiples componentes:
+
+```python
+reward = (
+    step_return × 0.3           # Retorno logarítmico ponderado (30%)
+    - drawdown_penalty²         # Penalización cuadrática por drawdown
+    - volatility_penalty        # Penalización por volatilidad excesiva
+    - downside_penalty × 2.0    # Penalización 2x para pérdidas
+    - beta_penalty              # Penalización si β > 0.5 respecto al oro
+    - var_penalty               # Penalización por VaR(95%) < -2%
+    + sharpe_bonus              # Bonificación por Sharpe Ratio alto
+    + capital_preservation      # Bonificación si portfolio > 95%
+    - severe_loss_penalty × 5.0 # Penalización severa si portfolio < 85%
+)
 ```
-reward = portfolio_return - transaction_costs - volatility_penalty
-```
+
+**Filosofía de diseño**: La función prioriza **preservación de capital** y **retornos ajustados por riesgo** sobre rentabilidad bruta, alineándose con principios de gestión profesional de riesgos.
 
 ---
 
