@@ -1,9 +1,91 @@
+# ================================================
+# Python & Environment
+# ================================================
+# Virtual Environment
 /environment
-/datasets
-__pycache__
 /tradenv
+venv/
+env/
+ENV/
+.venv/
 
-# TensorBoard
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ================================================
+# Datasets & Large Files
+# ================================================
+/datasets
+*.parquet
+*.hdf5
+
+# ================================================
+# IDE & Editors
+# ================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ================================================
+# RL & ML Models
+# ================================================
+# Trained Models
+best_model*/
+*.zip
+*.pkl
+*.pth
+*.h5
+
+# TensorBoard Logs
+tensorboard/
 tensorboard_logs/
 **/tensorboard_logs*/
 **/events.out.tfevents.*
+**/tensorboard*/
+runs/
+logs/
+tb_logs/
+
+# Training Traces
+test_trace*.csv
+training_log*.csv
+*_trace*.csv
+
+# Checkpoints
+checkpoints/
+*.checkpoint
+
+# ================================================
+# Jupyter Notebooks
+# ================================================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ================================================
+# System & Temporary Files
+# ================================================
+*.log
+*.tmp
+*.bak
+.cache/
+temp/
+tmp/
+
+# ================================================
+# Testing
+# ================================================
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
