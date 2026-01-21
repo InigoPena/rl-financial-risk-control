@@ -5,22 +5,6 @@
 
 **Sistema avanzado de gestión de riesgo financiero basado en Aprendizaje por Refuerzo (RL) para trading de oro y activo de cobertura.**
 
----
-
-## 📋 Índice
-
-- [Descripción del Proyecto](#-descripción-del-proyecto)
-- [Estructura del Proyecto](#-estructura-del-proyecto)
-- [Algoritmos Implementados](#-algoritmos-implementados)
-- [Entornos de Trading](#-entornos-de-trading)
-- [Instalación](#-instalación)
-- [Uso](#-uso)
-- [Datos](#-datos)
-- [Experimentos](#-experimentos)
-- [Resultados](#-resultados)
-- [Contribuir](#-contribuir)
-
----
 
 ## Descripción del Proyecto
 
